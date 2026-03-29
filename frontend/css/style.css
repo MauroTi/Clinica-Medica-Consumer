@@ -302,12 +302,7 @@ body {
     padding: 1.5rem;
 }
 
-/* Container para gráficos */
-.chart-container {
-    position: relative;
-    height: 300px;
-    margin-bottom: 1rem;
-}
+/* Container para gráficos */\n.chart-container {\n    position: relative;\n    margin-bottom: 1rem;\n    display: flex;\n    flex-direction: column;\n    min-height: 340px;\n}\n\n.chart-container canvas {\n    width: 100%;\n    min-height: 240px;\n    max-height: 280px;\n}
 
 /* ============================================
    TABELAS
@@ -731,12 +726,7 @@ footer p {
     padding: 1.5rem;
 }
 
-/* Container para gráficos */
-.chart-container {
-    position: relative;
-    height: 300px;
-    margin-bottom: 1rem;
-}
+/* Container para gráficos */\n.chart-container {\n    position: relative;\n    margin-bottom: 1rem;\n    display: flex;\n    flex-direction: column;\n    min-height: 340px;\n}\n\n.chart-container canvas {\n    width: 100%;\n    min-height: 240px;\n    max-height: 280px;\n}
 
 /* ============================================
    TABELAS
@@ -1080,3 +1070,81 @@ footer p {
 #chartConsultasMedicos {
     max-height: 300px;
 }
+
+.chart-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    width: 100%;
+    padding: 0.5rem 0;
+}
+
+.chart-pagination .chart-page-info {
+    font-weight: 700;
+    color: var(--dark);
+    min-width: 96px;
+    text-align: center;
+}
+
+.chart-pagination button {
+    min-width: 110px;
+    padding: 0.35rem 0.9rem;
+}
+
+.chart-consultas-medicos {
+    height: 100% !important;
+    width: 100%;
+    max-height: 300px;
+}
+
+
+/* Ajustes finais para chart e paginação */
+.chart-container {
+    position: relative;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 340px;
+}
+
+.chart-container canvas {
+    width: 100%;
+    min-height: 240px;
+    max-height: 280px;
+}
+
+.chart-consultas-medicos {
+    height: auto !important;
+    max-height: 280px;
+    width: 100%;
+}
+
+.chart-pagination .btn {
+    border-radius: 8px;
+    padding: 0.45rem 0.9rem;
+    text-transform: none;
+}
+
+.btn-chart-nav {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    border: 1px solid #1e40af;
+    font-weight: 700;
+}
+
+.btn-chart-nav:hover,
+.btn-chart-nav:focus {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    color: white;
+    box-shadow: 0 5px 15px rgba(37, 99, 235, 0.3);
+}
+
+.chart-pagination .chart-page-info {
+    min-width: 100px;
+    font-weight: 700;
+    color: var(--dark);
+    text-align: center;
+}
+

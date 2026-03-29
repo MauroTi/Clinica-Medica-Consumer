@@ -1,3 +1,10 @@
+// =====================
+// PAGINAÇÃO DO GRÁFICO DE MÉDICOS
+// =====================
+let consultasSorted = []; // array completo de médicos ordenados por quantidade de consultas
+let currentPage = 0;      // página atual (0 = top 1-10)
+const pageSize = 10;      // quantos médicos por página
+
 /* ============================================
    CONFIGURAÇÃO E ESTADO GLOBAL
    ============================================ */
@@ -29,6 +36,82 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     console.log('✅ Dashboard iniciado com sucesso!');
 });
+
+/* ============================================
+   HELPERS DE COMPATIBILIDADE (BACKEND/CONSUMER)
+   ============================================ */
+function getConsultaData(consulta) {
+    return consulta?.data_consulta || consulta?.data || null;
+}
+
+function getConsultaHora(consulta) {
+    if (consulta?.hora) return consulta.hora;
+
+    const data = getConsultaData(consulta);
+    if (!data) return '-';
+
+    try {
+        const dt = new Date(data);
+        if (isNaN(dt.getTime())) return '-';
+
+        return dt.toLocaleTimeString('pt-BR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch {
+        return '-';
+    }
+}
+
+function getConsultaDescricao(consulta) {
+    return consulta?.descricao || consulta?.motivo || '-';
+}
+
+function getConsultaStatus(consulta) {
+    return String(consulta?.status || 'agendada').toLowerCase();
+}
+
+function getConsultaStatusLabel(status) {
+    const mapa = {
+        agendada: 'Agendada',
+        pendente: 'Pendente',
+        confirmada: 'Confirmada',
+        realizada: 'Realizada',
+        concluida: 'Concluída',
+        cancelada: 'Cancelada',
+        faltou: 'Faltou'
+    };
+
+    const chave = String(status || 'agendada').toLowerCase().trim();
+    return mapa[chave] || (chave.charAt(0).toUpperCase() + chave.slice(1));
+}
+
+function getNomePacienteConsulta(c) {
+    if (c?.paciente_nome) return c.paciente_nome;
+    const paciente = state.pacientes.find(p => p.id == c.paciente_id);
+    return paciente?.nome || 'Desconhecido';
+}
+
+function getNomeMedicoConsulta(c) {
+    if (!c) return 'Desconhecido';
+
+    const medicoId = Number(c.medico_id);
+
+    if (Array.isArray(state.medicos) && medicoId) {
+        const medico = state.medicos.find(m => Number(m.id) === medicoId);
+        if (medico && medico.nome) {
+            return medico.nome;
+        }
+    }
+
+    return c.medico_nome || 'Desconhecido';
+}
+
+function getEspecialidadeConsulta(c) {
+    if (c?.especialidade) return c.especialidade;
+    const medico = state.medicos.find(m => m.id == c.medico_id);
+    return medico?.especialidade || 'Não definida';
+}
 
 /* ============================================
    SETUP DE EVENTOS
@@ -154,9 +237,10 @@ function updateDashboard() {
 
     // Consultas hoje
     const hoje = new Date().toISOString().split('T')[0];
-    const consultasHoje = state.consultas.filter(c => 
-        c.data && c.data.includes(hoje)
-    ).length;
+    const consultasHoje = state.consultas.filter(c => {
+        const data = getConsultaData(c);
+        return data && String(data).includes(hoje);
+    }).length;
     
     document.getElementById('consultasHoje').textContent = 
         formatNumber(consultasHoje);
@@ -255,24 +339,23 @@ function renderConsultasTable() {
     const tbody = document.getElementById('tableConsultas');
     
     if (state.consultas.length === 0) {
-        tbody.innerHTML = '<tr class="text-center"><td colspan="8" class="py-4">Nenhuma consulta encontrada</td></tr>';
+        tbody.innerHTML = '<tr class="text-center"><td colspan="9" class="py-4">Nenhuma consulta encontrada</td></tr>';
         return;
     }
 
     tbody.innerHTML = state.consultas.map((c, index) => {
-        const paciente = state.pacientes.find(p => p.id === c.paciente_id);
-        const medico = state.medicos.find(m => m.id === c.medico_id);
-        const statusBadge = getStatusBadge(c.status);
+        const statusBadge = getStatusBadge(getConsultaStatus(c));
 
         return `
         <tr>
             <td><strong>#${index + 1}</strong></td>
-            <td>${paciente?.nome || 'Desconhecido'}</td>
-            <td>${medico?.nome || 'Desconhecido'}</td>
-            <td>${formatarData(c.data)}</td>
-            <td><code>${c.hora || '-'}</code></td>
+            <td>${getNomePacienteConsulta(c)}</td>
+            <td>${getNomeMedicoConsulta(c)}</td>
+            <td>${formatarData(getConsultaData(c))}</td>
+            <td><code>${getConsultaHora(c)}</code></td>
+            <td><span class="badge bg-info-light text-info">${getEspecialidadeConsulta(c)}</span></td>
             <td>${statusBadge}</td>
-            <td><small>${c.motivo || '-'}</small></td>
+            <td><small>${getConsultaDescricao(c)}</small></td>
             <td>
                 <button class="btn btn-sm btn-light" onclick="editarConsulta(${c.id})">
                     <i class="fas fa-edit"></i>
@@ -311,8 +394,9 @@ function createChartEspecialidadePacientes() {
     // Contar pacientes por especialidade das consultas
     const especialidades = {};
     state.consultas.forEach(c => {
-        if (c.especialidade) {
-            especialidades[c.especialidade] = (especialidades[c.especialidade] || 0) + 1;
+        const esp = getEspecialidadeConsulta(c);
+        if (esp) {
+            especialidades[esp] = (especialidades[esp] || 0) + 1;
         }
     });
 
@@ -407,10 +491,11 @@ function createChartStatusConsultas() {
     console.log('   Dados das consultas:', state.consultas);
     
     const status = {
-        'Confirmada': state.consultas.filter(c => c.status === 'confirmada').length,
-        'Pendente': state.consultas.filter(c => c.status === 'pendente').length,
-        'Cancelada': state.consultas.filter(c => c.status === 'cancelada').length,
-        'Realizada': state.consultas.filter(c => c.status === 'realizada').length
+        'Agendada': state.consultas.filter(c => getConsultaStatus(c) === 'agendada').length,
+        'Pendente': state.consultas.filter(c => getConsultaStatus(c) === 'pendente').length,
+        'Confirmada': state.consultas.filter(c => getConsultaStatus(c) === 'confirmada').length,
+        'Realizada': state.consultas.filter(c => getConsultaStatus(c) === 'realizada').length,
+        'Cancelada': state.consultas.filter(c => getConsultaStatus(c) === 'cancelada').length
     };
 
     console.log('   Status contados:', status);
@@ -427,10 +512,11 @@ function createChartStatusConsultas() {
                 label: 'Quantidade de Consultas',
                 data: Object.values(status),
                 backgroundColor: [
-                    '#10b981', // Verde - Confirmada
-                    '#f59e0b', // Amarelo - Pendente
-                    '#ef4444', // Vermelho - Cancelada
-                    '#2563eb'  // Azul - Realizada
+                    '#6366f1', // Agendada
+                    '#f59e0b', // Pendente
+                    '#10b981', // Confirmada
+                    '#2563eb', // Realizada
+                    '#ef4444'  // Cancelada
                 ],
                 borderRadius: 8,
                 borderSkipped: false,
@@ -463,33 +549,55 @@ function createChartStatusConsultas() {
     });
 }
 
-function createChartConsultasMedicos() {
+function createChartConsultasMedicos(page = 0) {
     const ctx = document.getElementById('chartConsultasMedicos').getContext('2d');
-    
-    const consultasPorMedico = {};
-    state.consultas.forEach(c => {
-        const medico = state.medicos.find(m => m.id === c.medico_id);
-        if (medico) {
-            consultasPorMedico[medico.nome] = (consultasPorMedico[medico.nome] || 0) + 1;
-        }
+
+    // =====================
+    // CALCULA CONTAGEM POR MÉDICO (APENAS NA PRIMEIRA EXECUÇÃO)
+    // =====================
+    if (!consultasSorted.length) {
+        const consultasPorMedico = {};
+        state.consultas.forEach(c => {
+            const nomeMedico = getNomeMedicoConsulta(c);
+            if (nomeMedico && nomeMedico !== 'Desconhecido') {
+                consultasPorMedico[nomeMedico] = (consultasPorMedico[nomeMedico] || 0) + 1;
+            }
+        });
+
+        // Ordena decrescente por quantidade de consultas, desempate por nome
+        consultasSorted = Object.entries(consultasPorMedico)
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+
+    // =====================
+    // SELECIONA A PÁGINA ATUAL
+    // =====================
+    const paged = consultasSorted.slice(page * pageSize, (page + 1) * pageSize);
+
+    const labels = paged.map(([nome]) => {
+        const partes = String(nome).trim().split(/\s+/);
+        return partes.slice(0, 3).join(' '); // pega até 3 palavras do nome
     });
 
-    // Top 10
-    const sorted = Object.entries(consultasPorMedico)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10);
+    const valores = paged.map(([, count]) => Number(count));
 
+    // =====================
+    // DESTRÓI GRÁFICO EXISTENTE (SE HOUVER)
+    // =====================
     if (state.charts.consultasMedicos) {
         state.charts.consultasMedicos.destroy();
     }
 
+    // =====================
+    // CRIA O GRÁFICO
+    // =====================
     state.charts.consultasMedicos = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: sorted.map(([nome]) => nome.split(' ')[0]), // Primeiro nome
+            labels,
             datasets: [{
                 label: 'Consultas',
-                data: sorted.map(([, count]) => count),
+                data: valores,
                 backgroundColor: '#f59e0b',
                 borderRadius: 8,
                 borderSkipped: false
@@ -498,18 +606,33 @@ function createChartConsultasMedicos() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
+            indexAxis: 'y',
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.raw} consultas`;
+                        }
+                    }
+                }
             },
             scales: {
-                y: {
-                    ticks: { stepSize: 1 }
-                }
+                x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+                y: { ticks: { autoSkip: false } }
             }
         }
     });
-}
 
+    // =====================
+    // ATUALIZA INFORMAÇÃO DE PÁGINA NO HTML
+    // =====================
+    const totalPages = Math.ceil(consultasSorted.length / pageSize);
+    const pageInfo = document.getElementById('chartPageInfo');
+    if (pageInfo) {
+        pageInfo.textContent = `Página ${page + 1} de ${totalPages}`;
+    }
+}
 /* ============================================
    NAVEGAÇÃO E SEÇÕES
    ============================================ */
@@ -534,6 +657,21 @@ function showSection(sectionId) {
     document.querySelectorAll(`[data-section="${sectionId}"]`).forEach(link => {
         link.classList.add('active');
     });
+}
+
+function nextPage() {
+    const totalPages = Math.ceil(consultasSorted.length / pageSize);
+    if (currentPage + 1 < totalPages) {
+        currentPage++;
+        createChartConsultasMedicos(currentPage);
+    }
+}
+
+function prevPage() {
+    if (currentPage > 0) {
+        currentPage--;
+        createChartConsultasMedicos(currentPage);
+    }
 }
 
 /* ============================================
@@ -562,20 +700,25 @@ function getNomAbreviado(nome) {
 }
 
 function getStatusBadge(status) {
+    const chave = String(status || 'agendada').toLowerCase().trim();
+
     const statusMap = {
+        'agendada': { class: 'bg-primary-light text-primary', icon: 'fa-calendar-plus' },
         'confirmada': { class: 'bg-success-light text-success', icon: 'fa-check-circle' },
         'pendente': { class: 'bg-warning-light text-warning', icon: 'fa-clock' },
         'cancelada': { class: 'bg-danger-light text-danger', icon: 'fa-times-circle' },
-        'realizada': { class: 'bg-info-light text-info', icon: 'fa-check' }
+        'realizada': { class: 'bg-info-light text-info', icon: 'fa-check' },
+        'concluida': { class: 'bg-info-light text-info', icon: 'fa-check-double' },
+        'faltou': { class: 'bg-secondary text-white', icon: 'fa-user-slash' }
     };
 
-    const s = statusMap[status?.toLowerCase()] || { class: 'bg-gray-light text-muted', icon: 'fa-question' };
-    return `<span class="badge ${s.class}"><i class="fas ${s.icon} me-1"></i>${status}</span>`;
+    const s = statusMap[chave] || { class: 'bg-secondary text-white', icon: 'fa-question' };
+    return `<span class="badge ${s.class}"><i class="fas ${s.icon} me-1"></i>${getConsultaStatusLabel(chave)}</span>`;
 }
 
 function filterTable(tableId, searchTerm) {
     const tbody = document.getElementById(tableId);
-    const rows = tbody.querySelectorAll('tbody tr');
+    const rows = tbody.querySelectorAll('tr');
 
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();

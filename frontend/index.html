@@ -242,7 +242,12 @@
                                 </h5>
                             </div>
                             <div class="card-body chart-container">
-                                <canvas id="chartConsultasMedicos"></canvas>
+                                <canvas id="chartConsultasMedicos" class="chart-consultas-medicos"></canvas>
+                                <div class="chart-pagination">
+    <button class="btn btn-chart-nav btn-sm" onclick="prevPage()">⬅ Anterior</button>
+    <span id="chartPageInfo" class="chart-page-info"><i class="fas fa-layer-group me-1"></i>Página 1</span>
+    <button class="btn btn-chart-nav btn-sm" onclick="nextPage()">Próximo ➡</button>
+</div>
                             </div>
                         </div>
                     </div>
@@ -336,18 +341,21 @@
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Paciente</th>
-                                    <th>Médico</th>
-                                    <th>Data</th>
-                                    <th>Hora</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableConsultas">
-                                <tr class="text-center">
-                                    <td colspan="6">
+    <tr>
+        <th>#</th>
+        <th>Paciente</th>
+        <th>Médico</th>
+        <th>Data</th>
+        <th>Hora</th>
+        <th>Especialidade</th>
+        <th>Status</th>
+        <th>Descrição</th>
+        <th>Ações</th>
+    </tr>
+</thead>
+<tbody id="tableConsultas">
+    <tr class="text-center">
+        <td colspan="9">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Carregando...
                                     </td>
