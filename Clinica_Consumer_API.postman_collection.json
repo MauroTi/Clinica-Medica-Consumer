@@ -1,0 +1,298 @@
+{
+  "info": {
+    "_postman_id": "clinica-consumer-api",
+    "name": "Clinica Consumer API",
+    "description": "Testes da API que consome Clinica_Medica_Node",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code é 200', function() {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response é válida', function() {",
+              "  var jsonData = pm.response.json();",
+              "  pm.expect(jsonData.status).to.eql('OK');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Pacientes",
+      "item": [
+        {
+          "name": "Listar Pacientes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 200', function() {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response contém dados', function() {",
+                  "  var jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.success).to.eql(true);",
+                  "  pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pacientes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pacientes"]
+            }
+          }
+        },
+        {
+          "name": "Obter Paciente por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 200 ou 404', function() {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pacientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pacientes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Paciente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 201', function() {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response contém dados do paciente', function() {",
+                  "  var jsonData = pm.response.json();",
+                  "  pm.expect(jsonData.success).to.eql(true);",
+                  "  pm.expect(jsonData.data.id).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"nome\\\": \\\"João Silva\\\",\\n  \\\"email\\\": \\\"joao@email.com\\\",\\n  \\\"telefone\\\": \\\"11999999999\\\",\\n  \\\"cpf\\\": \\\"12345678900\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pacientes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pacientes"]
+            }
+          }
+        },
+        {
+          "name": "Atualizar Paciente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 200 ou 404', function() {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"nome\\\": \\\"João Silva Updated\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pacientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pacientes", "1"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Paciente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code é 204 ou 404', function() {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([204, 404]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pacientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pacientes", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Médicos",
+      "item": [
+        {
+          "name": "Listar Médicos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/medicos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "medicos"]
+            }
+          }
+        },
+        {
+          "name": "Obter Médico por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/medicos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "medicos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Médico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"nome\\\": \\\"Dr. Silva\\\",\\n  \\\"especialidade\\\": \\\"Cardiologia\\\",\\n  \\\"telefone\\\": \\\"11999999999\\\"\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/medicos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "medicos"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultas",
+      "item": [
+        {
+          "name": "Listar Consultas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/consultas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "consultas"]
+            }
+          }
+        },
+        {
+          "name": "Obter Consulta por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/consultas/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "consultas", "1"]
+            }
+          }
+        },
+        {
+          "name": "Criar Consulta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\\n  \\\"data\\\": \\\"2024-01-15\\\",\\n  \\\"hora\\\": \\\"10:00\\\",\\n  \\\"idMedico\\\": 1,\\n  \\\"idPaciente\\\": 1\\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/consultas",
+              "host": ["{{base_url}}"],
+              "path": ["api", "consultas"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    }
+  ]
+}
