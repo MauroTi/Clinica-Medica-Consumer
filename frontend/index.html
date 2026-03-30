@@ -260,6 +260,9 @@
                     <h1 class="h2">
                         <i class="fas fa-users me-2 text-primary"></i>Pacientes
                     </h1>
+                    <button class="btn btn-sm btn-primary" onclick="adicionarPaciente()">
+                        <i class="fas fa-plus me-1"></i>Adicionar Paciente
+                    </button>
                 </div>
 
                 <div class="card">
@@ -270,11 +273,11 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>#</th>
                                     <th>Nome</th>
                                     <th>CPF</th>
                                     <th>Telefone</th>
                                     <th>Email</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tablePacientes">
@@ -296,6 +299,9 @@
                     <h1 class="h2">
                         <i class="fas fa-user-md me-2 text-success"></i>Médicos
                     </h1>
+                    <button class="btn btn-sm btn-success" onclick="adicionarMedico()">
+                        <i class="fas fa-plus me-1"></i>Adicionar Médico
+                    </button>
                 </div>
 
                 <div class="card">
@@ -306,16 +312,17 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>#</th>
                                     <th>Nome</th>
                                     <th>CRM</th>
                                     <th>Especialidade</th>
                                     <th>Telefone</th>
+                                    <th>Email</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody id="tableMedicos">
                                 <tr class="text-center">
-                                    <td colspan="5">
+                                    <td colspan="6">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Carregando...
                                     </td>
@@ -332,6 +339,9 @@
                     <h1 class="h2">
                         <i class="fas fa-calendar-check me-2 text-warning"></i>Consultas
                     </h1>
+                    <button class="btn btn-sm btn-warning" onclick="adicionarConsulta()">
+                        <i class="fas fa-plus me-1"></i>Adicionar Consulta
+                    </button>
                 </div>
 
                 <div class="card">
@@ -342,7 +352,7 @@
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
     <tr>
-        <th>#</th>
+
         <th>Paciente</th>
         <th>Médico</th>
         <th>Data</th>
@@ -355,7 +365,7 @@
 </thead>
 <tbody id="tableConsultas">
     <tr class="text-center">
-        <td colspan="9">
+        <td colspan="8">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Carregando...
                                     </td>
@@ -372,6 +382,89 @@
             </footer>
         </main>
     </div>
+
+    <!-- MODAL PACIENTE -->
+    <div class="modal fade" id="modalPaciente" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalPacienteTitle">Adicionar Paciente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formPaciente">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="pacienteName" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="pacienteName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pacienteIdade" class="form-label">Idade</label>
+                            <input type="number" class="form-control" id="pacienteIdade" min="0" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pacienteCpf" class="form-label">CPF</label>
+                            <input type="text" class="form-control" id="pacienteCpf">
+                        </div>
+                        <div class="mb-3">
+                            <label for="pacienteTelefone" class="form-label">Telefone</label>
+                            <input type="text" class="form-control" id="pacienteTelefone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="pacienteEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="pacienteEmail" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MÉDICO -->
+    <div class="modal fade" id="modalMedico" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalMedicoTitle">Adicionar Médico</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formMedico">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="medicoName" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="medicoName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="medicoCrm" class="form-label">CRM</label>
+                            <input type="text" class="form-control" id="medicoCrm" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="medicoEspecialidade" class="form-label">Especialidade</label>
+                            <input type="text" class="form-control" id="medicoEspecialidade" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="medicoTelefone" class="form-label">Telefone</label>
+                            <input type="text" class="form-control" id="medicoTelefone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="medicoEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="medicoEmail" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

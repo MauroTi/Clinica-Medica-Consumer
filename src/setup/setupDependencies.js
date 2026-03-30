@@ -19,9 +19,13 @@ import {
   GetMedicosUseCase,
   GetMedicoByIdUseCase,
   CreateMedicoUseCase,
+  UpdateMedicoUseCase,
+  DeleteMedicoUseCase,
   GetConsultasUseCase,
   GetConsultaByIdUseCase,
-  CreateConsultaUseCase
+  CreateConsultaUseCase,
+  UpdateConsultaUseCase,
+  DeleteConsultaUseCase
 } from '../useCases/index.js';
 import {
   PacienteController,
@@ -113,6 +117,16 @@ export function setupDependencies() {
     return new CreateMedicoUseCase(repo);
   });
 
+  ServiceContainer.register('UpdateMedicoUseCase', () => {
+    const repo = ServiceContainer.resolve('MedicoRepository');
+    return new UpdateMedicoUseCase(repo);
+  });
+
+  ServiceContainer.register('DeleteMedicoUseCase', () => {
+    const repo = ServiceContainer.resolve('MedicoRepository');
+    return new DeleteMedicoUseCase(repo);
+  });
+
   // Use Cases - Consultas
   ServiceContainer.register('GetConsultasUseCase', () => {
     const consultaRepo = ServiceContainer.resolve('ConsultaRepository');
@@ -127,6 +141,16 @@ export function setupDependencies() {
   ServiceContainer.register('CreateConsultaUseCase', () => {
     const repo = ServiceContainer.resolve('ConsultaRepository');
     return new CreateConsultaUseCase(repo);
+  });
+
+  ServiceContainer.register('UpdateConsultaUseCase', () => {
+    const repo = ServiceContainer.resolve('ConsultaRepository');
+    return new UpdateConsultaUseCase(repo);
+  });
+
+  ServiceContainer.register('DeleteConsultaUseCase', () => {
+    const repo = ServiceContainer.resolve('ConsultaRepository');
+    return new DeleteConsultaUseCase(repo);
   });
 
   // Controllers
@@ -144,7 +168,9 @@ export function setupDependencies() {
     return new MedicoController(
       ServiceContainer.resolve('GetMedicosUseCase'),
       ServiceContainer.resolve('GetMedicoByIdUseCase'),
-      ServiceContainer.resolve('CreateMedicoUseCase')
+      ServiceContainer.resolve('CreateMedicoUseCase'),
+      ServiceContainer.resolve('UpdateMedicoUseCase'),
+      ServiceContainer.resolve('DeleteMedicoUseCase')
     );
   });
 
@@ -152,7 +178,9 @@ export function setupDependencies() {
     return new ConsultaController(
       ServiceContainer.resolve('GetConsultasUseCase'),
       ServiceContainer.resolve('GetConsultaByIdUseCase'),
-      ServiceContainer.resolve('CreateConsultaUseCase')
+      ServiceContainer.resolve('CreateConsultaUseCase'),
+      ServiceContainer.resolve('UpdateConsultaUseCase'),
+      ServiceContainer.resolve('DeleteConsultaUseCase')
     );
   });
 }
