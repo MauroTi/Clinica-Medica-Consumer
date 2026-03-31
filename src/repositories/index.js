@@ -11,23 +11,23 @@ export class BaseRepository {
   }
 
   async getAll() {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 
   async getById(id) {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 
   async create(data) {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 
   async update(id, data) {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 
   async delete(id) {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 }
 

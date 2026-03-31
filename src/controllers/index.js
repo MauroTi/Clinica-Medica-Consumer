@@ -11,7 +11,7 @@ export class PacienteController {
     getPacienteByIdUseCase,
     createPacienteUseCase,
     updatePacienteUseCase,
-    deletePacienteUseCase
+    deletePacienteUseCase,
   ) {
     this.getPacientesUseCase = getPacientesUseCase;
     this.getPacienteByIdUseCase = getPacienteByIdUseCase;
@@ -51,7 +51,7 @@ export class PacienteController {
     try {
       const paciente = await this.updatePacienteUseCase.execute(
         req.params.id,
-        req.body
+        req.body,
       );
       res.json(paciente);
     } catch (error) {
@@ -78,7 +78,7 @@ export class MedicoController {
     getMedicoByIdUseCase,
     createMedicoUseCase,
     updateMedicoUseCase,
-    deleteMedicoUseCase
+    deleteMedicoUseCase,
   ) {
     this.getMedicosUseCase = getMedicosUseCase;
     this.getMedicoByIdUseCase = getMedicoByIdUseCase;
@@ -118,7 +118,7 @@ export class MedicoController {
     try {
       const medico = await this.updateMedicoUseCase.execute(
         req.params.id,
-        req.body
+        req.body,
       );
       res.json(medico);
     } catch (error) {
@@ -145,7 +145,7 @@ export class ConsultaController {
     getConsultaByIdUseCase,
     createConsultaUseCase,
     updateConsultaUseCase,
-    deleteConsultaUseCase
+    deleteConsultaUseCase,
   ) {
     this.getConsultasUseCase = getConsultasUseCase;
     this.getConsultaByIdUseCase = getConsultaByIdUseCase;
@@ -157,22 +157,27 @@ export class ConsultaController {
   async index(req, res) {
     try {
       const consultas = await this.getConsultasUseCase.execute();
-      
+
       // As consultas já vêm enriquecidas do UseCase com especialidade e status
       // Se temos cache, reforçar o mapeamento de especialidade
       if (global.medicosCache && global.medicosCache.length > 0) {
         const medicoMap = {};
-        global.medicosCache.forEach(m => {
+        global.medicosCache.forEach((m) => {
           medicoMap[m.id] = m;
         });
-        
-        return res.json(consultas.map(c => ({
-          ...c,
-          especialidade: medicoMap[c.medico_id]?.especialidade || c.especialidade || 'Não definida',
-          status: c.status || 'pendente'
-        })));
+
+        return res.json(
+          consultas.map((c) => ({
+            ...c,
+            especialidade:
+              medicoMap[c.medico_id]?.especialidade ||
+              c.especialidade ||
+              "Não definida",
+            status: c.status || "pendente",
+          })),
+        );
       }
-      
+
       res.json(consultas);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -201,7 +206,7 @@ export class ConsultaController {
     try {
       const consulta = await this.updateConsultaUseCase.execute(
         req.params.id,
-        req.body
+        req.body,
       );
       res.json(consulta);
     } catch (error) {

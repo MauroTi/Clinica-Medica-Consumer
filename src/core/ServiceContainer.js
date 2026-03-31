@@ -15,7 +15,7 @@ class ServiceContainer {
    * @param {boolean} singleton - Se deve ser singleton
    */
   register(name, factory, singleton = false) {
-    if (typeof factory !== 'function') {
+    if (typeof factory !== "function") {
       throw new Error(`Factory para ${name} não é uma função`);
     }
     this.services.set(name, { factory, singleton });

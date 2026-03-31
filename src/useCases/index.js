@@ -7,7 +7,7 @@
  */
 export class BaseUseCase {
   async execute() {
-    throw new Error('Método não implementado');
+    throw new Error("Método não implementado");
   }
 }
 
@@ -31,7 +31,7 @@ export class GetPacienteByIdUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.pacienteRepository.getById(id);
   }
 }
@@ -44,7 +44,7 @@ export class CreatePacienteUseCase extends BaseUseCase {
 
   async execute(data) {
     if (!data.nome || !data.email) {
-      throw new Error('Nome e email são obrigatórios');
+      throw new Error("Nome e email são obrigatórios");
     }
     return this.pacienteRepository.create(data);
   }
@@ -57,7 +57,7 @@ export class UpdatePacienteUseCase extends BaseUseCase {
   }
 
   async execute(id, data) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.pacienteRepository.update(id, data);
   }
 }
@@ -69,7 +69,7 @@ export class DeletePacienteUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.pacienteRepository.delete(id);
   }
 }
@@ -94,7 +94,7 @@ export class GetMedicoByIdUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.medicoRepository.getById(id);
   }
 }
@@ -107,7 +107,7 @@ export class CreateMedicoUseCase extends BaseUseCase {
 
   async execute(data) {
     if (!data.nome || !data.especialidade) {
-      throw new Error('Nome e especialidade são obrigatórios');
+      throw new Error("Nome e especialidade são obrigatórios");
     }
     return this.medicoRepository.create(data);
   }
@@ -120,7 +120,7 @@ export class UpdateMedicoUseCase extends BaseUseCase {
   }
 
   async execute(id, data) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.medicoRepository.update(id, data);
   }
 }
@@ -132,7 +132,7 @@ export class DeleteMedicoUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.medicoRepository.delete(id);
   }
 }
@@ -150,14 +150,17 @@ export class GetConsultasUseCase extends BaseUseCase {
     const consultas = await this.consultaRepository.getAll();
 
     const medicoMap = {};
-    this.allMedicos.forEach(m => {
+    this.allMedicos.forEach((m) => {
       medicoMap[m.id] = m;
     });
 
-    return consultas.map(c => ({
+    return consultas.map((c) => ({
       ...c,
-      especialidade: medicoMap[c.medico_id]?.especialidade || c.especialidade || 'Não definida',
-      status: c.status || 'pendente'
+      especialidade:
+        medicoMap[c.medico_id]?.especialidade ||
+        c.especialidade ||
+        "Não definida",
+      status: c.status || "pendente",
     }));
   }
 
@@ -173,7 +176,7 @@ export class GetConsultaByIdUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.consultaRepository.getById(id);
   }
 }
@@ -186,7 +189,9 @@ export class CreateConsultaUseCase extends BaseUseCase {
 
   async execute(data) {
     if (!data.paciente_id || !data.medico_id || !data.data_consulta) {
-      throw new Error('paciente_id, medico_id e data_consulta são obrigatórios');
+      throw new Error(
+        "paciente_id, medico_id e data_consulta são obrigatórios",
+      );
     }
     return this.consultaRepository.create(data);
   }
@@ -199,9 +204,11 @@ export class UpdateConsultaUseCase extends BaseUseCase {
   }
 
   async execute(id, data) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     if (!data.paciente_id || !data.medico_id || !data.data_consulta) {
-      throw new Error('paciente_id, medico_id e data_consulta são obrigatórios');
+      throw new Error(
+        "paciente_id, medico_id e data_consulta são obrigatórios",
+      );
     }
     return this.consultaRepository.update(id, data);
   }
@@ -214,7 +221,7 @@ export class DeleteConsultaUseCase extends BaseUseCase {
   }
 
   async execute(id) {
-    if (!id) throw new Error('ID é obrigatório');
+    if (!id) throw new Error("ID é obrigatório");
     return this.consultaRepository.delete(id);
   }
 }

@@ -2,12 +2,12 @@
 // ROTAS
 // ============================================================================
 
-import express from 'express';
+import express from "express";
 
 export function createPacienteRoutes(pacienteController) {
   const router = express.Router();
 
-  router.get('/', async (req, res, next) => {
+  router.get("/", async (req, res, next) => {
     try {
       await pacienteController.index(req, res);
     } catch (err) {
@@ -15,7 +15,7 @@ export function createPacienteRoutes(pacienteController) {
     }
   });
 
-  router.get('/:id', async (req, res, next) => {
+  router.get("/:id", async (req, res, next) => {
     try {
       await pacienteController.show(req, res);
     } catch (err) {
@@ -23,7 +23,7 @@ export function createPacienteRoutes(pacienteController) {
     }
   });
 
-  router.post('/', async (req, res, next) => {
+  router.post("/", async (req, res, next) => {
     try {
       await pacienteController.store(req, res);
     } catch (err) {
@@ -31,7 +31,7 @@ export function createPacienteRoutes(pacienteController) {
     }
   });
 
-  router.put('/:id', async (req, res, next) => {
+  router.put("/:id", async (req, res, next) => {
     try {
       await pacienteController.update(req, res);
     } catch (err) {
@@ -39,7 +39,7 @@ export function createPacienteRoutes(pacienteController) {
     }
   });
 
-  router.delete('/:id', async (req, res, next) => {
+  router.delete("/:id", async (req, res, next) => {
     try {
       await pacienteController.destroy(req, res);
     } catch (err) {
@@ -53,7 +53,7 @@ export function createPacienteRoutes(pacienteController) {
 export function createMedicoRoutes(medicoController) {
   const router = express.Router();
 
-  router.get('/', async (req, res, next) => {
+  router.get("/", async (req, res, next) => {
     try {
       await medicoController.index(req, res);
     } catch (err) {
@@ -61,7 +61,7 @@ export function createMedicoRoutes(medicoController) {
     }
   });
 
-  router.get('/:id', async (req, res, next) => {
+  router.get("/:id", async (req, res, next) => {
     try {
       await medicoController.show(req, res);
     } catch (err) {
@@ -69,7 +69,7 @@ export function createMedicoRoutes(medicoController) {
     }
   });
 
-  router.post('/', async (req, res, next) => {
+  router.post("/", async (req, res, next) => {
     try {
       await medicoController.store(req, res);
     } catch (err) {
@@ -77,7 +77,7 @@ export function createMedicoRoutes(medicoController) {
     }
   });
 
-  router.put('/:id', async (req, res, next) => {
+  router.put("/:id", async (req, res, next) => {
     try {
       await medicoController.update(req, res);
     } catch (err) {
@@ -85,7 +85,7 @@ export function createMedicoRoutes(medicoController) {
     }
   });
 
-  router.delete('/:id', async (req, res, next) => {
+  router.delete("/:id", async (req, res, next) => {
     try {
       await medicoController.destroy(req, res);
     } catch (err) {
@@ -99,7 +99,7 @@ export function createMedicoRoutes(medicoController) {
 export function createConsultaRoutes(consultaController) {
   const router = express.Router();
 
-  router.get('/', async (req, res, next) => {
+  router.get("/", async (req, res, next) => {
     try {
       await consultaController.index(req, res);
     } catch (err) {
@@ -107,7 +107,7 @@ export function createConsultaRoutes(consultaController) {
     }
   });
 
-  router.get('/:id', async (req, res, next) => {
+  router.get("/:id", async (req, res, next) => {
     try {
       await consultaController.show(req, res);
     } catch (err) {
@@ -115,7 +115,7 @@ export function createConsultaRoutes(consultaController) {
     }
   });
 
-  router.post('/', async (req, res, next) => {
+  router.post("/", async (req, res, next) => {
     try {
       await consultaController.store(req, res);
     } catch (err) {
@@ -123,7 +123,7 @@ export function createConsultaRoutes(consultaController) {
     }
   });
 
-  router.put('/:id', async (req, res, next) => {
+  router.put("/:id", async (req, res, next) => {
     try {
       await consultaController.update(req, res);
     } catch (err) {
@@ -131,7 +131,7 @@ export function createConsultaRoutes(consultaController) {
     }
   });
 
-  router.delete('/:id', async (req, res, next) => {
+  router.delete("/:id", async (req, res, next) => {
     try {
       await consultaController.destroy(req, res);
     } catch (err) {
