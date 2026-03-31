@@ -149,13 +149,11 @@ export class GetConsultasUseCase extends BaseUseCase {
   async execute() {
     const consultas = await this.consultaRepository.getAll();
 
-    // Mapear medicos por ID
     const medicoMap = {};
     this.allMedicos.forEach(m => {
       medicoMap[m.id] = m;
     });
 
-    // Enriquecer cada consulta
     return consultas.map(c => ({
       ...c,
       especialidade: medicoMap[c.medico_id]?.especialidade || c.especialidade || 'Não definida',
@@ -163,7 +161,6 @@ export class GetConsultasUseCase extends BaseUseCase {
     }));
   }
 
-  // Método para injetar os médicos depois
   setMedicos(medicos) {
     this.allMedicos = medicos;
   }

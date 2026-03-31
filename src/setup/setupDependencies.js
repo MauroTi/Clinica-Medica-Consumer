@@ -34,10 +34,8 @@ import {
 } from '../controllers/index.js';
 
 export function setupDependencies() {
-  // Core
   ServiceContainer.register('HttpClient', () => new HttpClient(), true);
 
-  // Services
   ServiceContainer.register(
     'ClinicaApiService',
     () => {
@@ -47,7 +45,6 @@ export function setupDependencies() {
     true
   );
 
-  // Repositories
   ServiceContainer.register(
     'PacienteRepository',
     () => {
@@ -75,7 +72,7 @@ export function setupDependencies() {
     true
   );
 
-  // Use Cases - Pacientes
+  // Pacientes
   ServiceContainer.register('GetPacientesUseCase', () => {
     const repo = ServiceContainer.resolve('PacienteRepository');
     return new GetPacientesUseCase(repo);
@@ -101,7 +98,7 @@ export function setupDependencies() {
     return new DeletePacienteUseCase(repo);
   });
 
-  // Use Cases - Médicos
+  // Médicos
   ServiceContainer.register('GetMedicosUseCase', () => {
     const repo = ServiceContainer.resolve('MedicoRepository');
     return new GetMedicosUseCase(repo);
@@ -127,7 +124,7 @@ export function setupDependencies() {
     return new DeleteMedicoUseCase(repo);
   });
 
-  // Use Cases - Consultas
+  // Consultas
   ServiceContainer.register('GetConsultasUseCase', () => {
     const consultaRepo = ServiceContainer.resolve('ConsultaRepository');
     return new GetConsultasUseCase(consultaRepo);

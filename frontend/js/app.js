@@ -20,6 +20,11 @@ let state = {
         especialidadeMedicos: null,
         statusConsultas: null,
         consultasMedicos: null
+    },
+    pagination: {
+        pacientes: { page: 1, pageSize: 10, filtered: [] },
+        medicos: { page: 1, pageSize: 10, filtered: [] },
+        consultas: { page: 1, pageSize: 10, filtered: [] }
     }
 };
 
@@ -28,12 +33,12 @@ let state = {
    ============================================ */
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('🚀 Inicializando Dashboard...');
-
+    
     setupEventListeners();
     await loadAllData();
     initializeCharts();
     startAutoRefresh();
-
+    
     console.log('✅ Dashboard iniciado com sucesso!');
 });
 
@@ -68,7 +73,7 @@ function getConsultaDescricao(consulta) {
 }
 
 function getConsultaStatus(consulta) {
-    return String(consulta?.status || 'agendada').toLowerCase().trim();
+    return String(consulta?.status || 'agendada').toLowerCase();
 }
 
 function getConsultaStatusLabel(status) {
@@ -86,40 +91,9 @@ function getConsultaStatusLabel(status) {
     return mapa[chave] || (chave.charAt(0).toUpperCase() + chave.slice(1));
 }
 
-function getApiErrorMessage(err, fallback = 'Erro na operação') {
-    if (!err) return fallback;
-
-    if (typeof err === 'string') return err;
-
-    if (err.message) return err.message;
-    if (err.error) return err.error;
-
-    return fallback;
-}
-
-function formatarDataParaInput(data) {
-    if (!data) return '';
-
-    try {
-        const dt = new Date(data);
-        if (isNaN(dt.getTime())) return '';
-
-        const ano = dt.getFullYear();
-        const mes = String(dt.getMonth() + 1).padStart(2, '0');
-        const dia = String(dt.getDate()).padStart(2, '0');
-        const hora = String(dt.getHours()).padStart(2, '0');
-        const minuto = String(dt.getMinutes()).padStart(2, '0');
-
-        // Como está usando prompt(), manter espaço funciona melhor aqui
-        return `${ano}-${mes}-${dia} ${hora}:${minuto}`;
-    } catch {
-        return '';
-    }
-}
-
 function getNomePacienteConsulta(c) {
     if (c?.paciente_nome) return c.paciente_nome;
-    const paciente = state.pacientes.find(p => Number(p.id) === Number(c?.paciente_id));
+    const paciente = state.pacientes.find(p => p.id == c.paciente_id);
     return paciente?.nome || 'Desconhecido';
 }
 
@@ -140,7 +114,8 @@ function getNomeMedicoConsulta(c) {
 
 function getEspecialidadeConsulta(c) {
     if (c?.especialidade) return c.especialidade;
-    const medico = state.medicos.find(m => Number(m.id) === Number(c?.medico_id));
+    if (c?.medico_especialidade) return c.medico_especialidade;
+    const medico = state.medicos.find(m => m.id == c.medico_id);
     return medico?.especialidade || 'Não definida';
 }
 
@@ -158,77 +133,54 @@ function setupEventListeners() {
     });
 
     // Botão atualizar
-    const btnAtualizar = document.getElementById('btnAtualizar');
-    if (btnAtualizar) {
-        btnAtualizar.addEventListener('click', async (e) => {
-            console.log('🔄 Atualizando dados...');
-            const btn = e.target.closest('.btn') || btnAtualizar;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-sync-alt me-1 fa-spin"></i> Atualizando...';
-
-            try {
-                await loadAllData();
-                updateAllCharts();
-                updateTimestamp();
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Atualizar';
-            }
-        });
-    }
+    document.getElementById('btnAtualizar').addEventListener('click', async (e) => {
+        console.log('🔄 Atualizando dados...');
+        const btn = e.target.closest('.btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-1 fa-spin"></i> Atualizando...';
+        
+        await loadAllData();
+        updateAllCharts();
+        updateTimestamp();
+        
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Atualizar';
+    });
 
     // Busca de pacientes
-    const searchPacientes = document.getElementById('searchPacientes');
-    if (searchPacientes) {
-        searchPacientes.addEventListener('input', (e) => {
-            filterTable('tablePacientes', e.target.value);
-        });
-    }
+    document.getElementById('searchPacientes').addEventListener('input', (e) => {
+        filterTable('tablePacientes', e.target.value);
+    });
 
     // Busca de médicos
-    const searchMedicos = document.getElementById('searchMedicos');
-    if (searchMedicos) {
-        searchMedicos.addEventListener('input', (e) => {
-            filterTable('tableMedicos', e.target.value);
-        });
-    }
+    document.getElementById('searchMedicos').addEventListener('input', (e) => {
+        filterTable('tableMedicos', e.target.value);
+    });
 
     // Busca de consultas
-    const searchConsultas = document.getElementById('searchConsultas');
-    if (searchConsultas) {
-        searchConsultas.addEventListener('input', (e) => {
-            filterTable('tableConsultas', e.target.value);
-        });
-    }
+    document.getElementById('searchConsultas').addEventListener('input', (e) => {
+        filterTable('tableConsultas', e.target.value);
+    });
 
     // Formulário de paciente
-    const formPaciente = document.getElementById('formPaciente');
-    if (formPaciente) {
-        formPaciente.addEventListener('submit', (e) => {
-            e.preventDefault();
-            salvarPaciente();
-        });
-    }
+    document.getElementById('formPaciente').addEventListener('submit', (e) => {
+        e.preventDefault();
+        salvarPaciente();
+    });
 
     // Formulário de médico
-    const formMedico = document.getElementById('formMedico');
-    if (formMedico) {
-        formMedico.addEventListener('submit', (e) => {
+    document.getElementById('formMedico').addEventListener('submit', (e) => {
+        e.preventDefault();
+        salvarMedico();
+    });
+
+    // Formulário de consulta
+    const formConsulta = document.getElementById('formConsulta');
+    if (formConsulta) {
+        formConsulta.addEventListener('submit', (e) => {
             e.preventDefault();
-            salvarMedico();
+            salvarConsulta();
         });
-    }
-
-    // Botões da paginação do gráfico (se existirem no HTML)
-    const btnPrevChart = document.getElementById('btnPrevChart');
-    const btnNextChart = document.getElementById('btnNextChart');
-
-    if (btnPrevChart) {
-        btnPrevChart.addEventListener('click', prevPage);
-    }
-
-    if (btnNextChart) {
-        btnNextChart.addEventListener('click', nextPage);
     }
 }
 
@@ -239,8 +191,7 @@ async function loadAllData() {
     try {
         console.log('📡 Carregando dados da API...');
         console.log('🔗 Endpoint base:', API_URL);
-
-        // Carregar dados em paralelo
+        
         const [pacientes, medicos, consultas] = await Promise.all([
             fetchData(`${API_URL}/pacientes`),
             fetchData(`${API_URL}/medicos`),
@@ -250,8 +201,6 @@ async function loadAllData() {
         state.pacientes = pacientes || [];
         state.medicos = medicos || [];
         state.consultas = consultas || [];
-
-        // Resetar paginação/recontagem do gráfico por médico após recarregar dados
         consultasSorted = [];
         currentPage = 0;
 
@@ -260,82 +209,56 @@ async function loadAllData() {
             medicos: state.medicos.length,
             consultas: state.consultas.length
         });
-
-        console.log('📦 Pacientes:', state.pacientes);
-        console.log('📦 Médicos:', state.medicos);
-        console.log('📦 Consultas:', state.consultas);
-
-        // Atualizar interface
+        
+        applyAllFiltersAndRender();
         updateDashboard();
-        renderPacientesTable();
-        renderMedicosTable();
-        renderConsultasTable();
         updateServerStatus(true);
 
         return true;
     } catch (error) {
         console.error('❌ Erro ao carregar dados:', error);
         updateServerStatus(false);
-        showError(getApiErrorMessage(error, 'Erro ao carregar dados da API'));
+        showError('Erro ao carregar dados da API');
         return false;
     }
 }
 
 async function fetchData(url) {
-    console.log(`🔗 Buscando: ${url}`);
-    const response = await fetch(url);
-
-    console.log(`📊 Response status: ${response.status} - ${response.statusText}`);
-
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    try {
+        console.log(`🔗 Buscando: ${url}`);
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : data.data || [];
+    } catch (error) {
+        console.error(`❌ Erro ao buscar ${url}:`, error.message);
+        return [];
     }
-
-    const data = await response.json();
-    console.log(`✅ Dados recebidos de ${url}:`, data);
-    return Array.isArray(data) ? data : data.data || [];
 }
 
 /* ============================================
    ATUALIZAR DASHBOARD
    ============================================ */
 function updateDashboard() {
-    const totalPacientes = document.getElementById('totalPacientes');
-    const totalMedicos = document.getElementById('totalMedicos');
-    const totalConsultas = document.getElementById('totalConsultas');
-    const consultasHojeEl = document.getElementById('consultasHoje');
+    document.getElementById('totalPacientes').textContent = formatNumber(state.pacientes.length);
+    document.getElementById('totalMedicos').textContent = formatNumber(state.medicos.length);
+    document.getElementById('totalConsultas').textContent = formatNumber(state.consultas.length);
+    document.getElementById('consultasHoje').textContent = formatNumber(
+        state.consultas.filter(c => {
+            const data = getConsultaData(c);
+            if (!data) return false;
+            const hoje = new Date().toDateString();
+            return new Date(data).toDateString() === hoje;
+        }).length
+    );
 
-    if (totalPacientes) {
-        totalPacientes.textContent = formatNumber(state.pacientes.length);
-    }
-
-    if (totalMedicos) {
-        totalMedicos.textContent = formatNumber(state.medicos.length);
-    }
-
-    if (totalConsultas) {
-        totalConsultas.textContent = formatNumber(state.consultas.length);
-    }
-
-    // Consultas hoje
-    const hoje = new Date().toISOString().split('T')[0];
-    const consultasHoje = state.consultas.filter(c => {
-        const data = getConsultaData(c);
-        return data && String(data).includes(hoje);
-    }).length;
-
-    if (consultasHojeEl) {
-        consultasHojeEl.textContent = formatNumber(consultasHoje);
-    }
-
-    // Atualizar timestamp
     updateTimestamp();
 }
 
 function updateTimestamp() {
-    const lastUpdate = document.getElementById('lastUpdate');
-    if (!lastUpdate) return;
-
     const now = new Date();
     const formatted = now.toLocaleString('pt-BR', {
         day: '2-digit',
@@ -344,8 +267,7 @@ function updateTimestamp() {
         hour: '2-digit',
         minute: '2-digit'
     });
-
-    lastUpdate.textContent = formatted;
+    document.getElementById('lastUpdate').textContent = formatted;
 }
 
 /* ============================================
@@ -353,14 +275,24 @@ function updateTimestamp() {
    ============================================ */
 function renderPacientesTable() {
     const tbody = document.getElementById('tablePacientes');
-    if (!tbody) return;
+    const pag = state.pagination.pacientes;
+    const lista = Array.isArray(pag.filtered) ? pag.filtered : state.pacientes;
+    const total = lista.length;
+    const totalPages = Math.max(1, Math.ceil(total / pag.pageSize));
 
-    if (state.pacientes.length === 0) {
+    if (pag.page > totalPages) pag.page = totalPages;
+    if (pag.page < 1) pag.page = 1;
+
+    if (total === 0) {
         tbody.innerHTML = '<tr class="text-center"><td colspan="5" class="py-4">Nenhum paciente encontrado</td></tr>';
+        renderPaginationControls('pacientes');
         return;
     }
 
-    tbody.innerHTML = state.pacientes.map((p) => `
+    const start = (pag.page - 1) * pag.pageSize;
+    const pagina = lista.slice(start, start + pag.pageSize);
+
+    tbody.innerHTML = pagina.map((p) => `
         <tr>
             <td>
                 <div class="d-flex align-items-center">
@@ -374,27 +306,35 @@ function renderPacientesTable() {
             <td>${p.telefone || '-'}</td>
             <td>${p.email || '-'}</td>
             <td>
-                <button class="btn btn-sm btn-light" onclick="editarPaciente(${p.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-light" onclick="deletarPaciente(${p.id})">
-                    <i class="fas fa-trash text-danger"></i>
-                </button>
+                <button class="btn btn-sm btn-light" onclick="editarPaciente(${p.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-light" onclick="deletarPaciente(${p.id})"><i class="fas fa-trash text-danger"></i></button>
             </td>
         </tr>
     `).join('');
+
+    renderPaginationControls('pacientes');
 }
 
 function renderMedicosTable() {
     const tbody = document.getElementById('tableMedicos');
-    if (!tbody) return;
+    const pag = state.pagination.medicos;
+    const lista = Array.isArray(pag.filtered) ? pag.filtered : state.medicos;
+    const total = lista.length;
+    const totalPages = Math.max(1, Math.ceil(total / pag.pageSize));
 
-    if (state.medicos.length === 0) {
+    if (pag.page > totalPages) pag.page = totalPages;
+    if (pag.page < 1) pag.page = 1;
+
+    if (total === 0) {
         tbody.innerHTML = '<tr class="text-center"><td colspan="6" class="py-4">Nenhum médico encontrado</td></tr>';
+        renderPaginationControls('medicos');
         return;
     }
 
-    tbody.innerHTML = state.medicos.map((m) => `
+    const start = (pag.page - 1) * pag.pageSize;
+    const pagina = lista.slice(start, start + pag.pageSize);
+
+    tbody.innerHTML = pagina.map((m) => `
         <tr>
             <td>
                 <div class="d-flex align-items-center">
@@ -409,27 +349,35 @@ function renderMedicosTable() {
             <td>${m.telefone || '-'}</td>
             <td>${m.email || '-'}</td>
             <td>
-                <button class="btn btn-sm btn-light" onclick="editarMedico(${m.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-light" onclick="deletarMedico(${m.id})">
-                    <i class="fas fa-trash text-danger"></i>
-                </button>
+                <button class="btn btn-sm btn-light" onclick="editarMedico(${m.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-light" onclick="deletarMedico(${m.id})"><i class="fas fa-trash text-danger"></i></button>
             </td>
         </tr>
     `).join('');
+
+    renderPaginationControls('medicos');
 }
 
 function renderConsultasTable() {
     const tbody = document.getElementById('tableConsultas');
-    if (!tbody) return;
+    const pag = state.pagination.consultas;
+    const lista = Array.isArray(pag.filtered) ? pag.filtered : state.consultas;
+    const total = lista.length;
+    const totalPages = Math.max(1, Math.ceil(total / pag.pageSize));
 
-    if (state.consultas.length === 0) {
+    if (pag.page > totalPages) pag.page = totalPages;
+    if (pag.page < 1) pag.page = 1;
+
+    if (total === 0) {
         tbody.innerHTML = '<tr class="text-center"><td colspan="8" class="py-4">Nenhuma consulta encontrada</td></tr>';
+        renderPaginationControls('consultas');
         return;
     }
 
-    tbody.innerHTML = state.consultas.map((c) => {
+    const start = (pag.page - 1) * pag.pageSize;
+    const pagina = lista.slice(start, start + pag.pageSize);
+
+    tbody.innerHTML = pagina.map((c) => {
         const statusBadge = getStatusBadge(getConsultaStatus(c));
 
         return `
@@ -442,16 +390,14 @@ function renderConsultasTable() {
             <td>${statusBadge}</td>
             <td><small>${getConsultaDescricao(c)}</small></td>
             <td>
-                <button class="btn btn-sm btn-light" onclick="editarConsulta(${c.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-light" onclick="deletarConsulta(${c.id})">
-                    <i class="fas fa-trash text-danger"></i>
-                </button>
+                <button class="btn btn-sm btn-light" onclick="editarConsulta(${c.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-light" onclick="deletarConsulta(${c.id})"><i class="fas fa-trash text-danger"></i></button>
             </td>
         </tr>
     `;
     }).join('');
+
+    renderPaginationControls('consultas');
 }
 
 /* ============================================
@@ -466,32 +412,21 @@ function updateAllCharts() {
     createChartEspecialidadePacientes();
     createChartEspecialidadeMedicos();
     createChartStatusConsultas();
-    createChartConsultasMedicos(currentPage);
+    createChartConsultasMedicos();
 }
 
 function createChartEspecialidadePacientes() {
     const canvas = document.getElementById('chartEspecialidadePacientes');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    console.log('📊 Criando gráfico de Pacientes por Especialidade...');
-    console.log('   Consultas disponíveis:', state.consultas.length);
-    console.log('   Dados das consultas:', state.consultas);
-
-    // Contar pacientes por especialidade das consultas
+    
     const especialidades = {};
     state.consultas.forEach(c => {
         const esp = getEspecialidadeConsulta(c);
-        if (esp) {
-            especialidades[esp] = (especialidades[esp] || 0) + 1;
-        }
+        if (esp) especialidades[esp] = (especialidades[esp] || 0) + 1;
     });
 
-    console.log('   Especialidades encontradas:', especialidades);
-
-    if (state.charts.especialidadePacientes) {
-        state.charts.especialidadePacientes.destroy();
-    }
+    if (state.charts.especialidadePacientes) state.charts.especialidadePacientes.destroy();
 
     const cores = ['#2563eb', '#ec4899', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'];
     const labels = Object.keys(especialidades);
@@ -514,11 +449,7 @@ function createChartEspecialidadePacientes() {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: { size: 12, weight: 600 },
-                        usePointStyle: true
-                    }
+                    labels: { padding: 15, font: { size: 12, weight: 600 }, usePointStyle: true }
                 }
             }
         }
@@ -529,16 +460,14 @@ function createChartEspecialidadeMedicos() {
     const canvas = document.getElementById('chartEspecialidadeMedicos');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
+    
     const especialidades = {};
     state.medicos.forEach(m => {
         const esp = m.especialidade || 'Não definida';
         especialidades[esp] = (especialidades[esp] || 0) + 1;
     });
 
-    if (state.charts.especialidadeMedicos) {
-        state.charts.especialidadeMedicos.destroy();
-    }
+    if (state.charts.especialidadeMedicos) state.charts.especialidadeMedicos.destroy();
 
     const colors = ['#10b981', '#06b6d4', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
@@ -559,11 +488,7 @@ function createChartEspecialidadeMedicos() {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        padding: 15,
-                        font: { size: 12, weight: 600 },
-                        usePointStyle: true
-                    }
+                    labels: { padding: 15, font: { size: 12, weight: 600 }, usePointStyle: true }
                 }
             }
         }
@@ -575,55 +500,42 @@ function createChartStatusConsultas() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    console.log('📊 Criando gráfico de Status das Consultas...');
-    console.log('   Consultas disponíveis:', state.consultas.length);
-    console.log('   Dados das consultas:', state.consultas);
-
     const statusMap = {};
-
     state.consultas.forEach(c => {
         const chave = getConsultaStatus(c);
         statusMap[chave] = (statusMap[chave] || 0) + 1;
     });
 
-    // Ordem preferencial
-    const ordemPreferencial = [
-        'agendada',
-        'pendente',
-        'confirmada',
-        'realizada',
-        'concluida',
-        'cancelada',
-        'faltou'
-    ];
+    const ordem = ['agendada', 'pendente', 'confirmada', 'realizada', 'concluida', 'cancelada', 'faltou'];
+    const labels = [];
+    const valores = [];
+    const cores = [];
 
-    const chavesExistentes = Object.keys(statusMap);
-
-    const chavesOrdenadas = [
-        ...ordemPreferencial.filter(k => chavesExistentes.includes(k)),
-        ...chavesExistentes.filter(k => !ordemPreferencial.includes(k)).sort()
-    ];
-
-    const labels = chavesOrdenadas.map(getConsultaStatusLabel);
-    const valores = chavesOrdenadas.map(k => statusMap[k]);
-
-    const corPorStatus = {
+    const colorMap = {
         agendada: '#6366f1',
         pendente: '#f59e0b',
         confirmada: '#10b981',
         realizada: '#2563eb',
-        concluida: '#0ea5e9',
+        concluida: '#06b6d4',
         cancelada: '#ef4444',
-        faltou: '#6b7280'
+        faltou: '#64748b'
     };
 
-    const backgroundColor = chavesOrdenadas.map(k => corPorStatus[k] || '#94a3b8');
+    ordem.forEach(chave => {
+        if ((statusMap[chave] || 0) > 0) {
+            labels.push(getConsultaStatusLabel(chave));
+            valores.push(statusMap[chave]);
+            cores.push(colorMap[chave] || '#94a3b8');
+        }
+    });
 
-    console.log('   Status contados:', statusMap);
-
-    if (state.charts.statusConsultas) {
-        state.charts.statusConsultas.destroy();
+    if (labels.length === 0) {
+        labels.push('Sem dados');
+        valores.push(0);
+        cores.push('#cbd5e1');
     }
+
+    if (state.charts.statusConsultas) state.charts.statusConsultas.destroy();
 
     state.charts.statusConsultas = new Chart(ctx, {
         type: 'bar',
@@ -632,47 +544,38 @@ function createChartStatusConsultas() {
             datasets: [{
                 label: 'Quantidade de Consultas',
                 data: valores,
-                backgroundColor,
+                backgroundColor: cores,
                 borderRadius: 8,
-                borderSkipped: false,
-                borderColor: '#fff',
-                borderWidth: 1
+                borderSkipped: false
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            indexAxis: 'y',
             plugins: {
-                legend: {
-                    display: true,
-                    labels: {
-                        font: { size: 12, weight: 600 },
-                        padding: 15
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.raw} consultas`;
+                        }
                     }
                 }
             },
             scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        precision: 0
-                    }
-                }
+                y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } }
             }
         }
     });
 }
 
-function createChartConsultasMedicos(page = 0) {
+function createChartConsultasMedicos(page = currentPage) {
     const canvas = document.getElementById('chartConsultasMedicos');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    // =====================
-    // CALCULA CONTAGEM POR MÉDICO (APENAS NA PRIMEIRA EXECUÇÃO)
-    // =====================
+    currentPage = page;
+
     if (!consultasSorted.length) {
         const consultasPorMedico = {};
 
@@ -683,40 +586,29 @@ function createChartConsultasMedicos(page = 0) {
             }
         });
 
-        // Ordena decrescente por quantidade de consultas, desempate por nome
         consultasSorted = Object.entries(consultasPorMedico)
-            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     }
 
     const totalPages = Math.max(1, Math.ceil(consultasSorted.length / pageSize));
 
-    // Garante página válida
-    if (page < 0) page = 0;
-    if (page > totalPages - 1) page = totalPages - 1;
-    currentPage = page;
+    if (currentPage < 0) currentPage = 0;
+    if (currentPage >= totalPages) currentPage = totalPages - 1;
 
-    // =====================
-    // SELECIONA A PÁGINA ATUAL
-    // =====================
-    const paged = consultasSorted.slice(page * pageSize, (page + 1) * pageSize);
+    const paged = consultasSorted.slice(
+        currentPage * pageSize,
+        (currentPage + 1) * pageSize
+    );
 
     const labels = paged.map(([nome]) => {
         const partes = String(nome).trim().split(/\s+/);
-        return partes.slice(0, 3).join(' '); // pega até 3 palavras do nome
+        return partes.slice(0, 3).join(' ');
     });
 
     const valores = paged.map(([, count]) => Number(count));
 
-    // =====================
-    // DESTRÓI GRÁFICO EXISTENTE (SE HOUVER)
-    // =====================
-    if (state.charts.consultasMedicos) {
-        state.charts.consultasMedicos.destroy();
-    }
+    if (state.charts.consultasMedicos) state.charts.consultasMedicos.destroy();
 
-    // =====================
-    // CRIA O GRÁFICO
-    // =====================
     state.charts.consultasMedicos = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -733,7 +625,7 @@ function createChartConsultasMedicos(page = 0) {
             responsive: true,
             maintainAspectRatio: false,
             indexAxis: 'y',
-            plugins: {
+            plugins: { 
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
@@ -744,72 +636,55 @@ function createChartConsultasMedicos(page = 0) {
                 }
             },
             scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        precision: 0
-                    }
-                },
-                y: {
-                    ticks: {
-                        autoSkip: false
-                    }
-                }
+                x: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } },
+                y: { ticks: { autoSkip: false } }
             }
         }
     });
 
-    // =====================
-    // ATUALIZA INFORMAÇÃO DE PÁGINA NO HTML
-    // =====================
-    const pageInfo = document.getElementById('chartPageInfo');
-    if (pageInfo) {
-        pageInfo.textContent = `Página ${page + 1} de ${totalPages}`;
-    }
+    renderChartPaginationControls();
+}
 
-    // =====================
-    // ATUALIZA BOTÕES DE PAGINAÇÃO (SE EXISTIREM)
-    // =====================
-    const btnPrev = document.getElementById('btnPrevChart');
-    const btnNext = document.getElementById('btnNextChart');
+function renderChartPaginationControls() {
+    const container = document.getElementById('pagination-chart-medicos');
+    if (!container) return;
 
-    if (btnPrev) btnPrev.disabled = page <= 0;
-    if (btnNext) btnNext.disabled = page >= totalPages - 1 || consultasSorted.length === 0;
+    const totalItems = consultasSorted.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    const start = totalItems === 0 ? 0 : (currentPage * pageSize) + 1;
+    const end = Math.min((currentPage + 1) * pageSize, totalItems);
+
+    container.innerHTML = `
+        <div class="pagination-summary">Mostrando ${start}-${end} de ${totalItems}</div>
+        <div class="pagination-actions">
+            <button class="btn btn-chart-nav btn-sm" ${currentPage <= 0 ? 'disabled' : ''} onclick="prevPage()">⬅ Anterior</button>
+            <span class="chart-page-info">Página ${currentPage + 1} de ${totalPages}</span>
+            <button class="btn btn-chart-nav btn-sm" ${currentPage >= totalPages - 1 ? 'disabled' : ''} onclick="nextPage()">Próximo ➡</button>
+        </div>
+    `;
 }
 
 /* ============================================
    NAVEGAÇÃO E SEÇÕES
    ============================================ */
 function showSection(sectionId) {
-    console.log(`📄 Mostrando seção: ${sectionId}`);
+    document.querySelectorAll('.section-content').forEach(section => section.classList.add('d-none'));
 
-    // Esconder todas as seções
-    document.querySelectorAll('.section-content').forEach(section => {
-        section.classList.add('d-none');
-    });
-
-    // Mostrar seção selecionada
     const section = document.getElementById(sectionId);
-    if (section) {
-        section.classList.remove('d-none');
-    }
+    if (section) section.classList.remove('d-none');
 
-    // Atualizar links da navbar
-    document.querySelectorAll('[data-section]').forEach(link => {
-        link.classList.remove('active');
-    });
-
-    document.querySelectorAll(`[data-section="${sectionId}"]`).forEach(link => {
-        link.classList.add('active');
-    });
+    document.querySelectorAll('[data-section]').forEach(link => link.classList.remove('active'));
+    document.querySelectorAll(`[data-section="${sectionId}"]`).forEach(link => link.classList.add('active'));
 }
 
 function nextPage() {
     const totalPages = Math.max(1, Math.ceil(consultasSorted.length / pageSize));
-    if (currentPage + 1 < totalPages) {
+
+    if (currentPage < totalPages - 1) {
         currentPage++;
         createChartConsultasMedicos(currentPage);
+    } else {
+        renderChartPaginationControls();
     }
 }
 
@@ -817,6 +692,8 @@ function prevPage() {
     if (currentPage > 0) {
         currentPage--;
         createChartConsultasMedicos(currentPage);
+    } else {
+        renderChartPaginationControls();
     }
 }
 
@@ -824,42 +701,48 @@ function prevPage() {
    FUNÇÕES UTILITÁRIAS
    ============================================ */
 function formatNumber(num) {
-    return Number(num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function formatarData(data) {
     if (!data) return '-';
     try {
-        const dt = new Date(data);
-        if (isNaN(dt.getTime())) return String(data);
-        return dt.toLocaleDateString('pt-BR');
+        return new Date(data).toLocaleDateString('pt-BR');
     } catch {
-        return String(data);
+        return data;
     }
+}
+
+function formatarDataInput(data) {
+    if (!data) return '';
+    const dt = new Date(data);
+    if (isNaN(dt.getTime())) return '';
+
+    const ano = dt.getFullYear();
+    const mes = String(dt.getMonth() + 1).padStart(2, '0');
+    const dia = String(dt.getDate()).padStart(2, '0');
+    const hora = String(dt.getHours()).padStart(2, '0');
+    const minuto = String(dt.getMinutes()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}T${hora}:${minuto}`;
 }
 
 function getNomAbreviado(nome) {
     if (!nome) return '?';
-
-    return nome.split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map(n => n[0])
-        .join('')
-        .toUpperCase();
+    return nome.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
 }
 
 function getStatusBadge(status) {
     const chave = String(status || 'agendada').toLowerCase().trim();
 
     const statusMap = {
-        agendada: { class: 'bg-primary-light text-primary', icon: 'fa-calendar-plus' },
-        confirmada: { class: 'bg-success-light text-success', icon: 'fa-check-circle' },
-        pendente: { class: 'bg-warning-light text-warning', icon: 'fa-clock' },
-        cancelada: { class: 'bg-danger-light text-danger', icon: 'fa-times-circle' },
-        realizada: { class: 'bg-info-light text-info', icon: 'fa-check' },
-        concluida: { class: 'bg-info-light text-info', icon: 'fa-check-double' },
-        faltou: { class: 'bg-secondary text-white', icon: 'fa-user-slash' }
+        'agendada': { class: 'bg-primary-light text-primary', icon: 'fa-calendar-plus' },
+        'confirmada': { class: 'bg-success-light text-success', icon: 'fa-check-circle' },
+        'pendente': { class: 'bg-warning-light text-warning', icon: 'fa-clock' },
+        'cancelada': { class: 'bg-danger-light text-danger', icon: 'fa-times-circle' },
+        'realizada': { class: 'bg-info-light text-info', icon: 'fa-check' },
+        'concluida': { class: 'bg-info-light text-info', icon: 'fa-check-double' },
+        'faltou': { class: 'bg-secondary text-white', icon: 'fa-user-slash' }
     };
 
     const s = statusMap[chave] || { class: 'bg-secondary text-white', icon: 'fa-question' };
@@ -867,16 +750,79 @@ function getStatusBadge(status) {
 }
 
 function filterTable(tableId, searchTerm) {
-    const tbody = document.getElementById(tableId);
-    if (!tbody) return;
+    const termo = String(searchTerm || '').toLowerCase().trim();
 
-    const rows = tbody.querySelectorAll('tr');
-    const termo = String(searchTerm || '').toLowerCase();
+    if (tableId === 'tablePacientes') {
+        state.pagination.pacientes.page = 1;
+        state.pagination.pacientes.filtered = state.pacientes.filter(p => {
+            const texto = `${p.nome || ''} ${p.cpf || ''} ${p.telefone || ''} ${p.email || ''}`.toLowerCase();
+            return texto.includes(termo);
+        });
+        renderPacientesTable();
+        return;
+    }
 
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(termo) ? '' : 'none';
-    });
+    if (tableId === 'tableMedicos') {
+        state.pagination.medicos.page = 1;
+        state.pagination.medicos.filtered = state.medicos.filter(m => {
+            const texto = `${m.nome || ''} ${m.crm || ''} ${m.especialidade || ''} ${m.telefone || ''} ${m.email || ''}`.toLowerCase();
+            return texto.includes(termo);
+        });
+        renderMedicosTable();
+        return;
+    }
+
+    if (tableId === 'tableConsultas') {
+        state.pagination.consultas.page = 1;
+        state.pagination.consultas.filtered = state.consultas.filter(c => {
+            const texto = `${getNomePacienteConsulta(c)} ${getNomeMedicoConsulta(c)} ${formatarData(getConsultaData(c))} ${getConsultaHora(c)} ${getEspecialidadeConsulta(c)} ${getConsultaStatusLabel(getConsultaStatus(c))} ${getConsultaDescricao(c)}`.toLowerCase();
+            return texto.includes(termo);
+        });
+        renderConsultasTable();
+    }
+}
+
+function applyAllFiltersAndRender() {
+    filterTable('tablePacientes', document.getElementById('searchPacientes')?.value || '');
+    filterTable('tableMedicos', document.getElementById('searchMedicos')?.value || '');
+    filterTable('tableConsultas', document.getElementById('searchConsultas')?.value || '');
+}
+
+function renderPaginationControls(tipo) {
+    const pag = state.pagination[tipo];
+    const container = document.getElementById(`pagination-${tipo}`);
+    if (!container || !pag) return;
+
+    const totalItems = Array.isArray(pag.filtered) ? pag.filtered.length : 0;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pag.pageSize));
+    const start = totalItems === 0 ? 0 : ((pag.page - 1) * pag.pageSize) + 1;
+    const end = Math.min(pag.page * pag.pageSize, totalItems);
+
+    container.innerHTML = `
+        <div class="pagination-summary">Mostrando ${start}-${end} de ${totalItems}</div>
+        <div class="pagination-actions">
+            <button class="btn btn-chart-nav btn-sm" ${pag.page <= 1 ? 'disabled' : ''} onclick="changePage('${tipo}', -1)">⬅ Anterior</button>
+            <span class="chart-page-info">Página ${pag.page} de ${totalPages}</span>
+            <button class="btn btn-chart-nav btn-sm" ${pag.page >= totalPages ? 'disabled' : ''} onclick="changePage('${tipo}', 1)">Próximo ➡</button>
+        </div>
+    `;
+}
+
+function changePage(tipo, delta) {
+    const pag = state.pagination[tipo];
+    if (!pag) return;
+
+    const totalItems = Array.isArray(pag.filtered) ? pag.filtered.length : 0;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pag.pageSize));
+    const novaPagina = pag.page + delta;
+
+    if (novaPagina < 1 || novaPagina > totalPages) return;
+
+    pag.page = novaPagina;
+
+    if (tipo === 'pacientes') renderPacientesTable();
+    if (tipo === 'medicos') renderMedicosTable();
+    if (tipo === 'consultas') renderConsultasTable();
 }
 
 /* ============================================
@@ -884,16 +830,12 @@ function filterTable(tableId, searchTerm) {
    ============================================ */
 function updateServerStatus(connected) {
     const status = document.getElementById('statusServer');
-    if (!status || !status.parentElement) return;
-
-    const icon = status.parentElement.querySelector('.fa-circle');
-
     if (connected) {
         status.textContent = 'Conectado';
-        if (icon) icon.className = 'fas fa-circle text-success';
+        status.parentElement.querySelector('.fa-circle').className = 'fas fa-circle text-success';
     } else {
         status.textContent = 'Desconectado';
-        if (icon) icon.className = 'fas fa-circle text-danger';
+        status.parentElement.querySelector('.fa-circle').className = 'fas fa-circle text-danger';
     }
 }
 
@@ -902,13 +844,10 @@ function updateServerStatus(connected) {
    ============================================ */
 function startAutoRefresh() {
     console.log('🔄 Auto-refresh iniciado (5 minutos)');
-
     setInterval(async () => {
         console.log('🔄 Auto-refresh executado');
-        const ok = await loadAllData();
-        if (ok) {
-            updateAllCharts();
-        }
+        await loadAllData();
+        updateAllCharts();
     }, REFRESH_INTERVAL);
 }
 
@@ -917,24 +856,19 @@ function startAutoRefresh() {
    ============================================ */
 function showToast(message, type = 'info') {
     const toastContainer = document.getElementById('toastContainer');
-    if (!toastContainer) {
-        alert(message);
-        return;
-    }
-
     const toastHtml = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="min-width: 300px;">
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-
     const toastEl = document.createElement('div');
     toastEl.innerHTML = toastHtml;
     toastContainer.appendChild(toastEl);
-
+    
     setTimeout(() => {
-        toastEl.remove();
+        const alert = toastEl.querySelector('.alert');
+        if (alert) alert.remove();
     }, 4000);
 }
 
@@ -953,27 +887,28 @@ function showSuccess(message) {
    ============================================ */
 let estadoEdicao = {
     paciente: null,
-    medico: null
+    medico: null,
+    consulta: null
 };
 
 /* ============================================
-   AÇÕES PACIENTES (EDIT/DELETE COM MODAL)
+   AÇÕES PACIENTES
    ============================================ */
 function editarPaciente(id) {
-    const paciente = state.pacientes.find(p => Number(p.id) === Number(id));
+    const paciente = state.pacientes.find(p => p.id === Number(id));
     if (!paciente) {
         showError('Paciente não encontrado.');
         return;
     }
 
     estadoEdicao.paciente = paciente.id;
-
+    
     document.getElementById('pacienteName').value = paciente.nome || '';
     document.getElementById('pacienteIdade').value = paciente.idade || '';
     document.getElementById('pacienteCpf').value = paciente.cpf || '';
     document.getElementById('pacienteTelefone').value = paciente.telefone || '';
     document.getElementById('pacienteEmail').value = paciente.email || '';
-
+    
     document.getElementById('modalPacienteTitle').textContent = 'Editar Paciente';
     const modal = new bootstrap.Modal(document.getElementById('modalPaciente'));
     modal.show();
@@ -982,29 +917,21 @@ function editarPaciente(id) {
 function deletarPaciente(id) {
     if (!confirm('Tem certeza que deseja deletar este paciente?')) return;
 
-    fetch(`${API_URL}/pacientes/${id}`, {
-        method: 'DELETE'
-    })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao deletar paciente'));
-        }
-    })
-    .then(async () => {
-        showSuccess('Paciente deletado com sucesso.');
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
+    fetch(`${API_URL}/pacientes/${id}`, { method: 'DELETE' })
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.mensagem || data?.message || 'Erro ao deletar paciente');
+        showSuccess(data?.mensagem || 'Paciente deletado com sucesso.');
+        await loadAllData();
+        updateAllCharts();
     })
     .catch(err => showError(err.message));
 }
 
 function adicionarPaciente() {
     estadoEdicao.paciente = null;
-
     document.getElementById('formPaciente').reset();
     document.getElementById('modalPacienteTitle').textContent = 'Adicionar Paciente';
-
     const modal = new bootstrap.Modal(document.getElementById('modalPaciente'));
     modal.show();
 }
@@ -1015,7 +942,7 @@ function salvarPaciente() {
     const cpf = document.getElementById('pacienteCpf').value.trim();
     const telefone = document.getElementById('pacienteTelefone').value.trim();
     const email = document.getElementById('pacienteEmail').value.trim();
-
+    
     if (!nome || !email || isNaN(idade)) {
         showError('Nome, email e idade válidos são obrigatórios.');
         return;
@@ -1023,111 +950,42 @@ function salvarPaciente() {
 
     const payload = { nome, idade, cpf, telefone, email };
     const method = estadoEdicao.paciente ? 'PUT' : 'POST';
-    const url = estadoEdicao.paciente
-        ? `${API_URL}/pacientes/${estadoEdicao.paciente}`
-        : `${API_URL}/pacientes`;
+    const url = estadoEdicao.paciente ? `${API_URL}/pacientes/${estadoEdicao.paciente}` : `${API_URL}/pacientes`;
 
     fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao salvar paciente'));
-        }
-        return res.json().catch(() => ({}));
-    })
-    .then(async () => {
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.mensagem || data?.message || 'Erro ao salvar paciente');
         showSuccess(estadoEdicao.paciente ? 'Paciente atualizado com sucesso.' : 'Paciente criado com sucesso.');
-
-        const modalEl = document.getElementById('modalPaciente');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        if (modalInstance) modalInstance.hide();
-
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
+        bootstrap.Modal.getInstance(document.getElementById('modalPaciente')).hide();
+        await loadAllData();
+        updateAllCharts();
     })
     .catch(err => showError(err.message));
 }
 
-function adicionarConsulta() {
-    // Selecionar paciente
-    const pacienteOptions = state.pacientes.map(p => `${p.id}: ${p.nome}`).join('\n');
-    const pacienteIdInput = prompt(`Selecione o paciente (ID: Nome):\n${pacienteOptions}`);
-    if (pacienteIdInput === null) return;
-    const paciente_id = Number(pacienteIdInput);
-
-    // Selecionar médico
-    const medicoOptions = state.medicos.map(m => `${m.id}: ${m.nome} (${m.especialidade})`).join('\n');
-    const medicoIdInput = prompt(`Selecione o médico (ID: Nome (Especialidade)):\n${medicoOptions}`);
-    if (medicoIdInput === null) return;
-    const medico_id = Number(medicoIdInput);
-
-    // Data da consulta
-    const data_consulta = prompt('Data da consulta (YYYY-MM-DD HH:mm):');
-    if (data_consulta === null) return;
-
-    // Descrição
-    const descricao = prompt('Descrição:');
-    if (descricao === null) return;
-
-    // Status
-    const status = prompt('Status (agendada, pendente, confirmada, realizada, cancelada, concluida, faltou):', 'agendada');
-    if (status === null) return;
-
-    // Observação do status
-    const observacao_status = prompt('Observação do status:');
-    if (observacao_status === null) return;
-
-    if (!paciente_id || !medico_id || !String(data_consulta).trim()) {
-        showError('Paciente, médico e data são obrigatórios.');
-        return;
-    }
-
-    fetch(`${API_URL}/consultas`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            paciente_id,
-            medico_id,
-            data_consulta: String(data_consulta).trim(),
-            descricao: String(descricao).trim(),
-            status: String(status).toLowerCase().trim(),
-            observacao_status: String(observacao_status).trim()
-        })
-    })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao criar consulta'));
-        }
-        return res.json().catch(() => ({}));
-    })
-    .then(async () => {
-        showSuccess('Consulta criada com sucesso.');
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
-    })
-    .catch(err => showError(err.message));
-}
-
+/* ============================================
+   AÇÕES MÉDICOS
+   ============================================ */
 function editarMedico(id) {
-    const medico = state.medicos.find(m => Number(m.id) === Number(id));
+    const medico = state.medicos.find(m => m.id === Number(id));
     if (!medico) {
         showError('Médico não encontrado.');
         return;
     }
 
     estadoEdicao.medico = medico.id;
-
+    
     document.getElementById('medicoName').value = medico.nome || '';
     document.getElementById('medicoCrm').value = medico.crm || '';
     document.getElementById('medicoEspecialidade').value = medico.especialidade || '';
     document.getElementById('medicoTelefone').value = medico.telefone || '';
     document.getElementById('medicoEmail').value = medico.email || '';
-
+    
     document.getElementById('modalMedicoTitle').textContent = 'Editar Médico';
     const modal = new bootstrap.Modal(document.getElementById('modalMedico'));
     modal.show();
@@ -1136,29 +994,21 @@ function editarMedico(id) {
 function deletarMedico(id) {
     if (!confirm('Tem certeza que deseja deletar este médico?')) return;
 
-    fetch(`${API_URL}/medicos/${id}`, {
-        method: 'DELETE'
-    })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao deletar médico'));
-        }
-    })
-    .then(async () => {
-        showSuccess('Médico deletado com sucesso.');
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
+    fetch(`${API_URL}/medicos/${id}`, { method: 'DELETE' })
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.mensagem || data?.message || 'Erro ao deletar médico');
+        showSuccess(data?.mensagem || 'Médico deletado com sucesso.');
+        await loadAllData();
+        updateAllCharts();
     })
     .catch(err => showError(err.message));
 }
 
 function adicionarMedico() {
     estadoEdicao.medico = null;
-
     document.getElementById('formMedico').reset();
     document.getElementById('modalMedicoTitle').textContent = 'Adicionar Médico';
-
     const modal = new bootstrap.Modal(document.getElementById('modalMedico'));
     modal.show();
 }
@@ -1169,7 +1019,7 @@ function salvarMedico() {
     const especialidade = document.getElementById('medicoEspecialidade').value.trim();
     const telefone = document.getElementById('medicoTelefone').value.trim();
     const email = document.getElementById('medicoEmail').value.trim();
-
+    
     if (!nome || !crm || !especialidade || !email) {
         showError('Todos os campos são obrigatórios.');
         return;
@@ -1177,133 +1027,121 @@ function salvarMedico() {
 
     const payload = { nome, crm, especialidade, telefone, email };
     const method = estadoEdicao.medico ? 'PUT' : 'POST';
-    const url = estadoEdicao.medico
-        ? `${API_URL}/medicos/${estadoEdicao.medico}`
-        : `${API_URL}/medicos`;
+    const url = estadoEdicao.medico ? `${API_URL}/medicos/${estadoEdicao.medico}` : `${API_URL}/medicos`;
 
     fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao salvar médico'));
-        }
-        return res.json().catch(() => ({}));
-    })
-    .then(async () => {
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.mensagem || data?.message || 'Erro ao salvar médico');
         showSuccess(estadoEdicao.medico ? 'Médico atualizado com sucesso.' : 'Médico criado com sucesso.');
-
-        const modalEl = document.getElementById('modalMedico');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        if (modalInstance) modalInstance.hide();
-
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
+        bootstrap.Modal.getInstance(document.getElementById('modalMedico')).hide();
+        await loadAllData();
+        updateAllCharts();
     })
     .catch(err => showError(err.message));
 }
 
+/* ============================================
+   AÇÕES CONSULTAS (SEM PROMPT / COM MODAL)
+   ============================================ */
+function adicionarConsulta() {
+    estadoEdicao.consulta = null;
+
+    popularSelectsConsulta();
+    document.getElementById('formConsulta').reset();
+    document.getElementById('consultaStatus').value = 'agendada';
+    document.getElementById('modalConsultaTitle').textContent = 'Adicionar Consulta';
+
+    const modal = new bootstrap.Modal(document.getElementById('modalConsulta'));
+    modal.show();
+}
+
 function editarConsulta(id) {
-    const consulta = state.consultas.find(c => Number(c.id) === Number(id));
+    const consulta = state.consultas.find(c => c.id === Number(id));
     if (!consulta) {
         showError('Consulta não encontrada.');
         return;
     }
 
-    // Selecionar paciente
-    const pacienteOptions = state.pacientes.map(p => `${p.id}: ${p.nome}`).join('\n');
-    const pacienteIdInput = prompt(
-        `Selecione o paciente (ID: Nome):\n${pacienteOptions}\n\nPaciente atual: ${consulta.paciente_id}: ${getNomePacienteConsulta(consulta)}`,
-        consulta.paciente_id
-    );
-    if (pacienteIdInput === null) return;
-    const paciente_id = Number(pacienteIdInput);
+    estadoEdicao.consulta = consulta.id;
+    popularSelectsConsulta();
 
-    // Selecionar médico
-    const medicoOptions = state.medicos.map(m => `${m.id}: ${m.nome} (${m.especialidade})`).join('\n');
-    const medicoIdInput = prompt(
-        `Selecione o médico (ID: Nome (Especialidade)):\n${medicoOptions}\n\nMédico atual: ${consulta.medico_id}: ${getNomeMedicoConsulta(consulta)} (${getEspecialidadeConsulta(consulta)})`,
-        consulta.medico_id
-    );
-    if (medicoIdInput === null) return;
-    const medico_id = Number(medicoIdInput);
+    document.getElementById('consultaPaciente').value = String(consulta.paciente_id || '');
+    document.getElementById('consultaMedico').value = String(consulta.medico_id || '');
+    document.getElementById('consultaData').value = formatarDataInput(getConsultaData(consulta));
+    document.getElementById('consultaDescricao').value = getConsultaDescricao(consulta) === '-' ? '' : getConsultaDescricao(consulta);
+    document.getElementById('consultaStatus').value = getConsultaStatus(consulta) || 'agendada';
+    document.getElementById('consultaObservacaoStatus').value = consulta.observacao_status || '';
 
-    // Data da consulta
-    const dataAtual = getConsultaData(consulta);
-    const data_consulta = prompt(
-        'Data da consulta (YYYY-MM-DD HH:mm):',
-        formatarDataParaInput(dataAtual) || ''
-    );
-    if (data_consulta === null) return;
+    document.getElementById('modalConsultaTitle').textContent = 'Editar Consulta';
 
-    // Descrição
-    const descricao = prompt('Descrição:', getConsultaDescricao(consulta) || '');
-    if (descricao === null) return;
+    const modal = new bootstrap.Modal(document.getElementById('modalConsulta'));
+    modal.show();
+}
 
-    // Status
-    const statusOptions = ['agendada', 'pendente', 'confirmada', 'realizada', 'cancelada', 'concluida', 'faltou'];
-    const statusInput = prompt(
-        `Status (${statusOptions.join(', ')}):`,
-        getConsultaStatus(consulta) || 'agendada'
-    );
-    if (statusInput === null) return;
-    const status = String(statusInput).toLowerCase().trim();
+function popularSelectsConsulta() {
+    const selectPaciente = document.getElementById('consultaPaciente');
+    const selectMedico = document.getElementById('consultaMedico');
 
-    // Observação do status
-    const observacao_status = prompt('Observação do status:', consulta.observacao_status || '');
-    if (observacao_status === null) return;
+    if (!selectPaciente || !selectMedico) return;
 
-    if (!paciente_id || !medico_id || !String(data_consulta).trim()) {
-        showError('Paciente, médico e data são obrigatórios.');
+    selectPaciente.innerHTML = '<option value="">Selecione o paciente</option>' + state.pacientes.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+    selectMedico.innerHTML = '<option value="">Selecione o médico</option>' + state.medicos.map(m => `<option value="${m.id}">${m.nome} - ${m.especialidade || 'Sem especialidade'}</option>`).join('');
+}
+
+async function salvarConsulta() {
+    const paciente_id = Number(document.getElementById('consultaPaciente').value);
+    const medico_id = Number(document.getElementById('consultaMedico').value);
+    const data_consulta = document.getElementById('consultaData').value;
+    const descricao = document.getElementById('consultaDescricao').value.trim();
+    const status = (document.getElementById('consultaStatus').value || 'agendada').trim().toLowerCase();
+    const observacao_status = document.getElementById('consultaObservacaoStatus').value.trim();
+
+    if (!paciente_id || !medico_id || !data_consulta) {
+        showError('Paciente, médico e data da consulta são obrigatórios.');
         return;
     }
 
-    fetch(`${API_URL}/consultas/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            paciente_id,
-            medico_id,
-            data_consulta: String(data_consulta).trim(),
-            descricao: String(descricao).trim(),
-            status,
-            observacao_status: String(observacao_status).trim()
-        })
-    })
-    .then(async (res) => {
+    const payload = { paciente_id, medico_id, data_consulta, descricao, status, observacao_status };
+    const method = estadoEdicao.consulta ? 'PUT' : 'POST';
+    const url = estadoEdicao.consulta ? `${API_URL}/consultas/${estadoEdicao.consulta}` : `${API_URL}/consultas`;
+
+    try {
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
         if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao atualizar consulta'));
+            throw new Error(data?.mensagem || data?.message || 'Erro ao salvar consulta');
         }
-        return res.json().catch(() => ({}));
-    })
-    .then(async () => {
-        showSuccess('Consulta atualizada com sucesso.');
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
-    })
-    .catch(err => showError(err.message));
+
+        showSuccess(estadoEdicao.consulta ? 'Consulta atualizada com sucesso.' : 'Consulta criada com sucesso.');
+        bootstrap.Modal.getInstance(document.getElementById('modalConsulta'))?.hide();
+        await loadAllData();
+        updateAllCharts();
+    } catch (err) {
+        showError(err.message);
+    }
 }
 
 function deletarConsulta(id) {
     if (!confirm('Tem certeza que deseja deletar esta consulta?')) return;
 
-    fetch(`${API_URL}/consultas/${id}`, {
-        method: 'DELETE'
-    })
-    .then(async (res) => {
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(getApiErrorMessage(err, 'Erro ao deletar consulta'));
-        }
-    })
-    .then(async () => {
-        showSuccess('Consulta deletada com sucesso.');
-        const ok = await loadAllData();
-        if (ok) updateAllCharts();
+    fetch(`${API_URL}/consultas/${id}`, { method: 'DELETE' })
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.mensagem || data?.message || 'Erro ao deletar consulta');
+        showSuccess(data?.mensagem || 'Consulta deletada com sucesso.');
+        await loadAllData();
+        updateAllCharts();
     })
     .catch(err => showError(err.message));
 }

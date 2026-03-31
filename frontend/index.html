@@ -243,11 +243,7 @@
                             </div>
                             <div class="card-body chart-container">
                                 <canvas id="chartConsultasMedicos" class="chart-consultas-medicos"></canvas>
-                                <div class="chart-pagination">
-    <button class="btn btn-chart-nav btn-sm" onclick="prevPage()">⬅ Anterior</button>
-    <span id="chartPageInfo" class="chart-page-info"><i class="fas fa-layer-group me-1"></i>Página 1</span>
-    <button class="btn btn-chart-nav btn-sm" onclick="nextPage()">Próximo ➡</button>
-</div>
+                              <div id="pagination-chart-medicos" class="pagination-container"></div>
                             </div>
                         </div>
                     </div>
@@ -289,6 +285,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <div id="pagination-pacientes" class="table-pagination"></div>
                     </div>
                 </div>
             </section>
@@ -329,6 +326,7 @@
                                 </tr>
                             </tbody>
                         </table>
+                        <div id="pagination-medicos" class="table-pagination"></div>
                     </div>
                 </div>
             </section>
@@ -351,27 +349,27 @@
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
-    <tr>
-
-        <th>Paciente</th>
-        <th>Médico</th>
-        <th>Data</th>
-        <th>Hora</th>
-        <th>Especialidade</th>
-        <th>Status</th>
-        <th>Descrição</th>
-        <th>Ações</th>
-    </tr>
-</thead>
-<tbody id="tableConsultas">
-    <tr class="text-center">
-        <td colspan="8">
+                                <tr>
+                                    <th>Paciente</th>
+                                    <th>Médico</th>
+                                    <th>Data</th>
+                                    <th>Hora</th>
+                                    <th>Especialidade</th>
+                                    <th>Status</th>
+                                    <th>Descrição</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableConsultas">
+                                <tr class="text-center">
+                                    <td colspan="8">
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Carregando...
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                        <div id="pagination-consultas" class="table-pagination"></div>
                     </div>
                 </div>
             </section>
@@ -385,38 +383,55 @@
 
     <!-- MODAL PACIENTE -->
     <div class="modal fade" id="modalPaciente" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalPacienteTitle">Adicionar Paciente</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content form-modal-content">
+                <div class="modal-header form-modal-header form-modal-header-primary">
+                    <div>
+                        <h5 class="modal-title mb-1" id="modalPacienteTitle">Adicionar Paciente</h5>
+                        <small class="text-white-50">Preencha os dados cadastrais do paciente</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formPaciente">
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="pacienteName" class="form-label">Nome</label>
-                            <input type="text" class="form-control" id="pacienteName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pacienteIdade" class="form-label">Idade</label>
-                            <input type="number" class="form-control" id="pacienteIdade" min="0" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="pacienteCpf" class="form-label">CPF</label>
-                            <input type="text" class="form-control" id="pacienteCpf">
-                        </div>
-                        <div class="mb-3">
-                            <label for="pacienteTelefone" class="form-label">Telefone</label>
-                            <input type="text" class="form-control" id="pacienteTelefone">
-                        </div>
-                        <div class="mb-3">
-                            <label for="pacienteEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="pacienteEmail" required>
+                        <div class="form-section-card">
+                            <div class="form-section-title">
+                                <i class="fas fa-id-card me-2"></i>Informações do Paciente
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label for="pacienteName" class="form-label">Nome completo</label>
+                                    <input type="text" class="form-control" id="pacienteName" placeholder="Ex.: Maria José da Silva" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="pacienteIdade" class="form-label">Idade</label>
+                                    <input type="number" class="form-control" id="pacienteIdade" min="0" max="130" placeholder="Ex.: 35" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="pacienteCpf" class="form-label">CPF</label>
+                                    <input type="text" class="form-control" id="pacienteCpf" placeholder="000.000.000-00">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="pacienteTelefone" class="form-label">Telefone</label>
+                                    <input type="text" class="form-control" id="pacienteTelefone" placeholder="(54) 99999-9999">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="pacienteEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="pacienteEmail" placeholder="paciente@email.com" required>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer form-modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Salvar Paciente
+                        </button>
                     </div>
                 </form>
             </div>
@@ -425,46 +440,143 @@
 
     <!-- MODAL MÉDICO -->
     <div class="modal fade" id="modalMedico" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalMedicoTitle">Adicionar Médico</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content form-modal-content">
+                <div class="modal-header form-modal-header form-modal-header-success">
+                    <div>
+                        <h5 class="modal-title mb-1" id="modalMedicoTitle">Adicionar Médico</h5>
+                        <small class="text-white-50">Preencha os dados profissionais do médico</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formMedico">
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="medicoName" class="form-label">Nome</label>
-                            <input type="text" class="form-control" id="medicoName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="medicoCrm" class="form-label">CRM</label>
-                            <input type="text" class="form-control" id="medicoCrm" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="medicoEspecialidade" class="form-label">Especialidade</label>
-                            <input type="text" class="form-control" id="medicoEspecialidade" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="medicoTelefone" class="form-label">Telefone</label>
-                            <input type="text" class="form-control" id="medicoTelefone">
-                        </div>
-                        <div class="mb-3">
-                            <label for="medicoEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="medicoEmail" required>
+                        <div class="form-section-card">
+                            <div class="form-section-title">
+                                <i class="fas fa-user-doctor me-2"></i>Informações Profissionais
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="medicoName" class="form-label">Nome completo</label>
+                                    <input type="text" class="form-control" id="medicoName" placeholder="Ex.: Dr. João Carlos" required>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="medicoCrm" class="form-label">CRM</label>
+                                    <input type="text" class="form-control" id="medicoCrm" placeholder="12345-RS" required>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="medicoEspecialidade" class="form-label">Especialidade</label>
+                                    <input type="text" class="form-control" id="medicoEspecialidade" placeholder="Cardiologia" required>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="medicoTelefone" class="form-label">Telefone</label>
+                                    <input type="text" class="form-control" id="medicoTelefone" placeholder="(54) 99999-9999">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="medicoEmail" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="medicoEmail" placeholder="medico@email.com" required>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer form-modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success">Salvar</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save me-1"></i>Salvar Médico
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- MODAL CONSULTA -->
+    <div class="modal fade" id="modalConsulta" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content form-modal-content">
+                <div class="modal-header form-modal-header form-modal-header-warning">
+                    <div>
+                        <h5 class="modal-title mb-1" id="modalConsultaTitle">Adicionar Consulta</h5>
+                        <small class="text-white-50">Agende ou edite uma consulta com dados completos</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formConsulta">
+                    <div class="modal-body">
+                        <div class="form-section-card">
+                            <div class="form-section-title">
+                                <i class="fas fa-calendar-check me-2"></i>Dados da Consulta
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="consultaPaciente" class="form-label">Paciente</label>
+                                    <select class="form-select" id="consultaPaciente" required>
+                                        <option value="">Selecione um paciente</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="consultaMedico" class="form-label">Médico</label>
+                                    <select class="form-select" id="consultaMedico" required>
+                                        <option value="">Selecione um médico</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="consultaData" class="form-label">Data</label>
+                                    <input type="date" class="form-control" id="consultaData" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="consultaHora" class="form-label">Hora</label>
+                                    <input type="time" class="form-control" id="consultaHora" required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="consultaStatus" class="form-label">Status</label>
+                                    <select class="form-select" id="consultaStatus" required>
+                                        <option value="agendada">Agendada</option>
+                                        <option value="pendente">Pendente</option>
+                                        <option value="confirmada">Confirmada</option>
+                                        <option value="realizada">Realizada</option>
+                                        <option value="concluida">Concluída</option>
+                                        <option value="cancelada">Cancelada</option>
+                                        <option value="faltou">Faltou</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="consultaDescricao" class="form-label">Descrição / Motivo</label>
+                                    <textarea class="form-control" id="consultaDescricao" rows="3" placeholder="Descreva o motivo ou detalhes da consulta"></textarea>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label for="consultaObservacaoStatus" class="form-label">Observação do Status</label>
+                                    <textarea class="form-control" id="consultaObservacaoStatus" rows="2" placeholder="Observações adicionais sobre o status da consulta"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer form-modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-1"></i>Salvar Consulta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+   
+
     <!-- TOAST CONTAINER -->
-    <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+    <div id="toastContainer" class="toast-container"></div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
